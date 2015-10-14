@@ -55,6 +55,7 @@ class Welcome extends CI_Controller {
 		$data['branches'] = $this->auth_model->getBranches();
 		$data['title'] = "Campus Guru";
 		$data['scripts'] = [base_url().'js/scripts.js'];
+		$data['unsetFooter'] = 'Unset Footer';
 
 		$this->load->view('layout/_header');
 		$this->load->view('layout/_top_index_nav');

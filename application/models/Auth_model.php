@@ -66,11 +66,9 @@ class Auth_model extends CI_Model{
 	public function signin($username, $password){
 		$field = filter_var($username, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 		$status = true;
-		$sql = "SELECT * FROM users WHERE ?=? AND password=? AND status=?;";
-		$query = $this->db->query($sql, [$field, $username,$password,$status]);
-
-		if(!empty($query)){
-			if(count($query) == 1){
+		$query = $this->db->get_where('users', [$field=>$username, 'password'=>$password, 'status'=>$status]);
+		if(! empty($query->result_array())){
+			if(count($query->result_array()) == 1){
 				$data = ['active'=>true];
 				$this->db->where($field, $username);
 				$this->db->update('users', $data);

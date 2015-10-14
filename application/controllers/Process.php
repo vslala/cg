@@ -29,8 +29,9 @@ class Process extends CI_Controller{
 		$college = $this->input->post('college');
 		$branch = $this->input->post('branch');
 		$username = $this->input->post('username');
-		$password = $this->input->post('password');
+		$password = md5($this->input->post('password'));
 		$last_seen = date('Y-m-d H:i:s',now());
+		$username = trim($username, ' ');
 		$userID = $this->auth_model->signup($name, $email, $college, $branch, $username, $password, $last_seen);
 
 		if($userID){
@@ -64,7 +65,7 @@ class Process extends CI_Controller{
 		}
 
 		$username = $this->input->post('username');
-		$password = $this->encrypt->encode($this->input->post('password'));
+		$password = md5($this->input->post('password'));
 		$remember = $this->input->post('remember');
 		$user = $this->auth_model->signin($username, $password);
 
@@ -105,19 +106,16 @@ class Process extends CI_Controller{
 	public function upload(){
 		$config['upload_path'] = './images/profile/dp/';
 		$config['allowed_types'] = 'gif|jpg|png|jpeg';
-		$config['max_size']	= '1000';
-		$config['max_width']  = '1024';
-		$config['max_height']  = '768';	
+		$config['max_size']	= '2000';
+		$config['max_width']  = '1366';
+		$config['max_height']  = '1366';	
 
 		$this->load->library('upload', $config);
 
 		if ( ! $this->upload->do_upload())
 		{
 			$error = array('error' => $this->upload->display_errors());
-
-			var_dump($error);
-			die();
-			// $this->load->view('upload_form', $error);
+			$this->session->set_flashdata('upload_error', $error);
 		}
 		else
 		{
@@ -171,7 +169,7 @@ class Process extends CI_Controller{
 		if ($this->form_validation->run() == FALSE)
 		{
 			$this->session->set_flashdata('error', 'Please fill the form carefully!');
-			redirect(base_url());
+			redirect(base_url().'thread/index');
 		}
 
 		$title = $this->input->post('title');
@@ -181,21 +179,33 @@ class Process extends CI_Controller{
 		$category = $this->input->post('category');
 		$tags = $this->input->post('tags');
 		$tagsArray = explode('#', $tags);
+		$image_url = $this->input->post('image_url');
 		$user_id = $this->session->userdata('id');
 		$user_name = $this->session->userdata('name');
 		$thread_url = base_url().'thread/show/'.$user_id.'/'.url_title($title);
-		$imageArray = [
-		'http://s6.postimg.org/pg9a66ldt/shutterstock_110485376_discussion.jpg'
-		];
-		$randomIndex = array_rand($imageArray, count($imageArray));
-		$image_url = $imageArray[$randomIndex];
 
 		$thread_url = $this->user_model->startThread($user_id, $user_name, $title, $description, $category, $thread_url, $image_url, $tagsArray, base_url());
 
-		if(! empty($thread_id)){
+		$this->load->library('email');
+
+		$users = $this->user_model->getAllUserEmail();
+		foreach ($users as $user){
+			$this->email->from('notification@campusguru.net', $user_name);
+			$this->email->to($user['email']); 
+			$this->email->subject('Campus Guru - New Thread Post to Campus Guru... Be the first one to answer.');
+			$data['thread_title'] = $title;
+			$data['thread_url'] = $thread_url;
+			$data['username'] = $user_name;
+			$this->email->message($this->load->view('template/email', $data, true));	
+			$this->email->set_mailtype("html");
+			$this->email->send();
+		}
+		
+		if(! empty($thread_url)){
+			$this->session->set_flashdata('success_message', 'Your Thread has been published. Click here to check it out <a href="'.$thread_url.'" >'.$thread_url.'</a>');
 			redirect($thread_url);
 		}else{
-			$this->session->set_userdata('error', 'There was some error creating the thread.');
+			$this->session->set_flashdata('error_message', 'There was some error creating the thread.');
 			redirect('thread/index');
 		}
 	}
@@ -204,6 +214,15 @@ class Process extends CI_Controller{
 		$threads = $this->user_model->getAllThreads();
 		$threads = json_encode($threads);
 		$this->output->set_output($threads);
+	}
+
+	public function getUserEmailFromThreadId($thread_id){
+		$sql = "SELECT users.email from users 
+			LEFT JOIN threads
+			ON threads.user_id = users.id
+			WHERE threads.id = 1;";
+		$query = $this->db->query($sql, [$thread_id]);
+		return $query->result_array();
 	}
 
 	public function reply(){
@@ -223,6 +242,26 @@ class Process extends CI_Controller{
 		$image_url = $imageArray[$randomIndex[0]];
 		$replyID = $this->user_model->addReply($user_id, $threadID, $threadTitle, $answer, $image_url, base_url());
 
+		//inserting notification
+		$threadData = $this->user_model->getThreadByThreadID($threadID);
+		$this->user_model->notification($user_id, $threadData, $threadTitle, true);
+
+		# Sending mail to the recipient's email address
+		$userEmail = getUserEmailFromThreadId($threadID);
+		$this->load->library('email');
+
+		$this->email->from('notification@campusguru.net', 'Campus Guru');
+		$this->email->to($userEmail[0]['email']); 
+		$this->email->cc('varun@campusguru.net'); 
+
+		$this->email->subject('Notification from Campus Guru. Someone replied to your thread!');
+		$this->email->message($userEmail[0]['email'].' replied to your thread on <a href="'.base_url(). 'thread/show/'.$threadID.'/'.$threadTitle.'">'.$threadTitle.'</a>');	
+
+		$this->email->send();
+
+		// echo $this->email->print_debugger();
+		# end mail
+
 		if(! empty($replyID)){
 			if($this->input->is_ajax_request()){
 				$this->output->set_output();
@@ -232,13 +271,16 @@ class Process extends CI_Controller{
 		}
 	}
 
+	
+
 	public function editThread(){
 		$id = $this->input->post('threadID');
 		$title = $this->input->post('title');
 		$description = $this->input->post('description');
 		$description = str_replace('<p>', '<br />', $description);
 		$description = str_replace('</p>', '', $description);
-		$this->user_model->editThread($id, $title, $description);
+		$image_url = $this->input->post('image_url');
+		$this->user_model->editThread($id, $title, $description, $image_url);
 		$user_id = $this->session->userdata('id');
 		redirect('profile/post/'.$user_id);
 	}
@@ -277,6 +319,25 @@ class Process extends CI_Controller{
 	public function getTagsById($id){
 		$tags = json_encode($this->user_model->getTags($id));
 		$this->output->set_output($tags);
+	}
+
+	public function contact(){
+		$name = $this->input->post('name');
+		$email = $this->input->post('email');
+		$telephone = $this->input->post('telephone');
+		$message = $this->input->post('message');
+
+		$this->load->library('email');
+
+		$this->email->from('notification@campusguru.net', $name);
+		$this->email->to('varunshrivastava007@gmail.com'); 
+
+		$this->email->subject('Contact me Varun');
+		$this->email->message('Name: '.$name.'<br />Email: '.$email.'<br />Telephone: '.$telephone.'<br />Message: '.$message);	
+
+		$this->email->send();
+		echo $this->email->print_debugger();
+		$this->output->set_output(true);
 	}
 
 	public function logout(){

@@ -14,6 +14,7 @@ class Thread extends CI_Controller{
 		$data['title'] = "CG-Thread";
 		$data['id'] = $this->session->userdata('id');
 		$data['categories'] = $this->user_model->getCategories();
+		$data['notifications'] = loadNotifications($this->session->userdata('id'));
 
 		$this->load->view('layout/_header', $data);
 		loadAppropriateView($data);	
@@ -22,16 +23,28 @@ class Thread extends CI_Controller{
 	}
 
 	public function show($threadID,$title){
+		$thread = $this->user_model->getThreadByThreadID($threadID);
+		$this->user_model->notificationOff($this->session->userdata('id'), $thread[0]['thread_url']);
+		$data['notifications'] = loadNotifications($this->session->userdata('id'));
 		$data['id'] = $this->session->userdata('id');
 		$data['title'] = 'CG-'.$title;
 		$data['thread'] = $this->user_model->getThread($threadID);
-		$data['replies'] = $this->user_model->getReplies($threadID);
 		$data['tags'] = $this->user_model->getTags($threadID);
-		$data['scripts'] = ['https://fb.me/react-0.13.3.min.js', 'https://fb.me/JSXTransformer-0.13.3.js'];
-
+		$data['thread_title'] = $title;
+		
 		$this->load->view('layout/_header', $data);
 		loadAppropriateView($data);
 		$this->load->view('thread/show', $data);
+		$this->load->view('layout/_footer');
+	}
+
+	public function discussions(){
+		$data['title'] = "CG-Discussions";
+		$data['categories'] = $this->user_model->getCategoriesWithThreadCount();
+
+		$this->load->view('layout/_header', $data);
+		loadAppropriateView($data);
+		$this->load->view('home/index', $data);
 		$this->load->view('layout/_footer');
 	}
 
@@ -44,10 +57,7 @@ class Thread extends CI_Controller{
 		$data['tags'] = $this->user_model->getAllTags();
 		$data['categories'] = $this->user_model->getCategoriesWithThreadCount();
 		$data['threads'] = $this->user_model->getThreadsByCategory($cat_id);
-
-		$data['scripts'] = ['https://fb.me/react-0.13.3.min.js',
-		 'https://fb.me/JSXTransformer-0.13.3.js'
-		 ];
+		$data['notifications'] = loadNotifications($this->session->userdata('id'));
 		
 		$this->load->view('layout/_header', $data);
 		loadAppropriateView($data);

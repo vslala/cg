@@ -22,7 +22,7 @@
                  <a href="<?= base_url(); ?>blog">Blog</a>
                </li>
                <li class="<?php if(isset($setDiscussionActive)) echo 'active'; ?>">
-                  <a href="<?= base_url(); ?>home/index">Discussions</a>
+                  <a href="<?= base_url(); ?>thread/discussions">Discussions</a>
                </li>
                <li>
                 <a href="<?= base_url(); ?>#register_section">Register</a>

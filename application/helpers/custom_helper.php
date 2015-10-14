@@ -20,3 +20,9 @@ function loadAppropriateView($data){
 			$c->load->view('layout/_top_index_nav', $data);
 		}
 }
+
+function loadNotifications($user_id){
+	$c =& get_instance();
+	$notifications = $c->user_model->getNotifications($user_id);
+	return $notifications;
+}

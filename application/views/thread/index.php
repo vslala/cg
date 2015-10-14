@@ -9,6 +9,12 @@ body{
 			<h3>Start a new Thread</h3>
 		</div>
 		<hr>
+	<?php if ($this->session->flashdata('success_message')): ?>
+		<span class="alert alert-success"><?= $this->session->flashdata('success_message'); ?></span>
+	<?php endif; ?>
+	<?php if ($this->session->flashdata('error_message')): ?>
+		<span class="alert alert-danger"><?= $this->session->flashdata('error_message'); ?></span>
+	<?php endif; ?>
     <?= form_open('process/startThread', ['id'=>'threadForm', 'role'=>'form']); ?>
 		<div class="row">
 			
@@ -51,6 +57,15 @@ body{
 					</div>
 					<div class="small-9 columns">
 						<input type="text" name="tags" id="tags" required="true" placeholder="ex #love #friendship #bootstrap etc...">
+					</div>
+				</div>
+				<div class="row">
+					<div class="small-3 columns">
+						<strong> Featured Image URL</strong>
+						<span class="help-block">(Image to use when sharing with facebook)</span>
+					</div>
+					<div class="small-9 columns">
+						<input type="text" name="image_url" id="image" placeholder="http://xyz.jpeg">
 					</div>
 				</div>
 				<div class="row">

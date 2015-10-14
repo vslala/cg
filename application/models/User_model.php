@@ -17,6 +17,12 @@ class User_model extends CI_Model{
 		return $r[0]['username'];
 	}
 
+	public function getUsernameEmailCollegeBranchById($id){
+		$this->db->select('username, email, college, branch');
+		$query = $this->db->get_where('users', ['id'=>$id]);
+		return $query->result_array();
+	}
+
 	public function getBranchNameById($branch_id){
 		$this->db->select('branch_name');
 		$query = $this->db->get_where('branches', ['id'=>$branch_id, 'status'=>true]);
@@ -48,6 +54,12 @@ class User_model extends CI_Model{
 			return $this->db->insert('display_pictures', $data);
 		}
 
+	}
+
+	public function getAllUserEmail(){
+		$this->db->select('email');
+		$query = $this->db->get('users');
+		return $query->result_array();
 	}
 
 	public function getDisplayPicture($id){
@@ -144,6 +156,12 @@ GROUP BY threads.id;";
 		return $query->result_array();
 	}
 
+	public function getThreadByThreadID($thread_id){
+		$this->db->select('user_id, thread_url');
+		$query = $this->db->get_where('threads', ['id'=>$thread_id]);
+		return $query->result_array(); 
+	}
+
 	public function getTags($id){
 		$query = $this->db->get_where('tags', ['thread_id'=>$id]);
 		return $query->result_array();
@@ -179,21 +197,76 @@ GROUP BY threads.id;";
 		$this->db->trans_complete();
 		return $replyID;
 	}
+	public function getAnswer($link){
+		$query = $this->db->get_where('answers', ['answer_url'=>$link]);
+		return $query->result_array();
+	}
+
+	public function notification($user_id, $threadData, $event, $status){
+		if($user_id == $threadData[0]['user_id'])
+			return;
+		$notification = [
+			'user_id' => $user_id,
+			'user_id_2' => $threadData[0]['user_id'],
+			'event' => $event,
+			'event_id' => $threadData[0]['thread_url'],
+			'status' => $status
+		];
+		$this->db->insert('notifications', $notification);
+	}
+
+	public function notificationOff($user_id, $event_id){
+
+		$data = [
+			'status'=>false
+		];
+		$this->db->where(['user_id_2'=>$user_id, 'event_id'=>$event_id]);
+		$this->db->update('notifications', $data);
+	}
+
+	public function getNotifications($user_id){
+		$sql = "SELECT notifications.*, users.username, display_pictures.image_url, (SELECT COUNT(*) FROM notifications WHERE user_id_2 = ? AND status=1) as notification_count
+				FROM notifications
+				LEFT JOIN users
+				ON notifications.user_id=users.id
+				LEFT JOIN display_pictures
+				ON display_pictures.user_id = users.id
+				WHERE notifications.user_id_2 = ?
+				GROUP BY notifications.user_id
+				ORDER BY notifications.created_at DESC
+				LIMIT 10;";
+		$query = $this->db->query($sql, [$user_id,$user_id]);
+		return $query->result_array();
+	}
+
+	public function getAllNotification($user_id_2){
+		$sql = "SELECT notifications.*, users.username, display_pictures.image_url, (SELECT COUNT(*) FROM notifications WHERE user_id_2 = ? AND status=1) as notification_count
+				FROM notifications
+				LEFT JOIN users
+				ON notifications.user_id=users.id
+				LEFT JOIN display_pictures
+				ON display_pictures.user_id = users.id
+				WHERE notifications.user_id_2 = ?
+				ORDER BY notifications.created_at DESC;";
+		$query = $this->db->query($sql, [$user_id_2, $user_id_2]);
+		return $query->result_array();
+	}
 
 	public function getAllThreads(){
-		$sql = 'SELECT threads.*, users.username, users.name, display_pictures.image_url as dp, (SELECT COUNT(*) FROM answers WHERE answers.thread_id = threads.id) as total_answers
+		$sql = 'SELECT threads.*, users.id, users.username, users.name, display_pictures.image_url as dp, (SELECT COUNT(*) FROM answers WHERE answers.thread_id = threads.id) as total_answers
 					FROM threads
 					LEFT JOIN users
 					ON users.id = threads.user_id
 					LEFT JOIN display_pictures
 					ON display_pictures.user_id = threads.user_id
-					ORDER BY threads.created_at DESC;';
+					ORDER BY threads.created_at DESC
+					LIMIT 25;';
 		$query = $this->db->query($sql);
 		return $query->result_array();			
 	}
 
 	public function getThreadsByUserId($id){
-		$sql = "SELECT threads.id, threads.title, threads.description, threads.thread_url, threads.created_at, (SELECT COUNT(*) FROM answers WHERE answers.thread_id=threads.id) as total_answers
+		$sql = "SELECT threads.id, threads.title, threads.description, threads.thread_url, threads.image_url, threads.created_at, (SELECT COUNT(*) FROM answers WHERE answers.thread_id=threads.id) as total_answers
 			FROM threads LEFT JOIN answers
 			ON answers.thread_id = threads.id
 			WHERE threads.user_id = ?
@@ -205,11 +278,12 @@ GROUP BY threads.id;";
 		return $query->result_array();
 	}
 
-	public function editThread($id, $title, $description){
+	public function editThread($id, $title, $description, $image_url){
 		$data = [
 			'id'=>$id,
 			'title'=>$title,
-			'description'=>$description
+			'description'=>$description,
+			'image_url'=>$image_url
 		];
 		$this->db->where('id',$id);
 		$this->db->update('threads', $data);
@@ -222,7 +296,8 @@ GROUP BY threads.id;";
 					ON answers.user_id = users.id
 					LEFT JOIN display_pictures
 					ON display_pictures.user_id = answers.user_id
-					WHERE answers.thread_id = ?; ";
+					WHERE answers.thread_id = ?
+					ORDER BY answers.created_at ASC; ";
 		$query = $this->db->query($sql, [$threadID]);
 		return $query->result_array();
 	}

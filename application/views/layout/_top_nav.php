@@ -2,17 +2,24 @@
 body{
   padding-top: 50px;
 }
+.inline-text{
+  display: inline-block;
+}
+#notification_dropdown{
+  width: 300px;
+}
+
 </style>
 <input type="hidden" value="<?= base_url(); ?>" id="base_address" />
 <nav class="navbar navbar-fixed-top header">
  	<div class="col-md-12">
         <div class="navbar-header">
           <a class="navbar-brand" rel="home" href="<?= base_url(); ?>home/index" title="Buy Sell Rent Everyting">
-            <img style="max-width:100px; height:50px; margin-top: -7px;"
+            <img style="max-width:100px; height:45px; margin-top: -7px;"
                  src="<?= base_url(); ?>images/static/logo.png" class="th">
           </a>
           <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse1">
-          <i class="glyphicon glyphicon-search"></i>
+          <i class="glyphicon glyphicon-list"></i>
           </button>
 
         </div>
@@ -36,16 +43,38 @@ body{
              <!-- <li>@if(isset($userImage[0]))<a href="<?= base_url(); ?>" class="pull-right">{!! Html::image($userImage[0]['image_url'],"dp",['title'=>'profile_image', 'class'=>'img img-responsive img-rectangle', 'style'=>'height: 25px;']) !!}</a> @endif</li> -->
              <?php if($this->session->userdata('id')): ?>
                <li style="font-size: small;">
-                <a href="<?= base_url(); ?>profile/index/<?php if(isset($id)) echo $id; ?>" >
+                <a href="<?= base_url(); ?>profile/index/<?php if($this->session->userdata('id')) echo $this->session->userdata('id'); ?>" >
                   Logged in as: <?php if(isset($dp[0]['image_url'])): ?><img src="<?= $dp[0]['image_url']; ?>" class="th" style="width: 25px;"><?php endif; ?><?= $this->session->userdata('username'); ?>
                 </a>
               </li>
             <?php endif; ?>
-             <li>
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="glyphicon glyphicon-th-large"></i></a>
-                <ul class="dropdown-menu">
-                  <li><a href="<?= base_url(); ?>thread/index" class="dropdown_link">Start a Thread</a></li>                  
-                </ul>
+             <li >
+                <a href="#" data-dropdown="notification_dropdown" aria-controls="notification_dropdown" aria-expanded="false">
+                  <i class="glyphicon glyphicon-th-large"></i><span class="badge">
+                  <?php if(isset($notifications[0])): ?>
+                    <?= $notifications[0]['notification_count']; ?>
+                  <?php else: ?>
+                    0
+                  <?php endif; ?>
+                </span>
+                </a>
+                <div class="notifications-dropdown-wrapper">
+                  <ul class="f-dropdown" data-dropdown-content aria-hidden="true" tabindex="-1" id="notification_dropdown">
+
+                    <?php if(isset($notifications[0])): ?>
+                    <?php foreach($notifications as $n): ?>
+                      <li <?php if($n['status'] == true) echo 'style="background-color: yellow;" '; ?>>
+                        <a class="inline-text" style="color: blue; font-weight: bold;" href="<?= base_url(); ?>profile/index/<?= $n['user_id']; ?>"><?= $n['username']; ?></a>
+                        &nbsp; <span class="inline-text"> replied to your thread </span>
+                        <a class="inline-text" style="color:blue; font-weight: bold;" href="<?= $n['event_id']; ?>"><?= $n['event'] ?></a>
+                      </li>
+                      <li class="nav-divider"></li>
+                    <?php endforeach; ?>    
+                    <?php endif; ?> 
+                    <li><a href="<?= base_url(); ?>home/notification" >See all Notifications</a></li>  
+
+                  </ul>
+                </div>
              </li>
 
              <!-- Notification for questions and discussions -->
@@ -119,6 +148,7 @@ body{
           <ul class="nav navbar-nav navbar-right">
              <li class="<?php if(isset($setBlogActive)) echo 'active'; ?>"><a href="<?= base_url(); ?>/blog">Blogs</a></li>
              <li><a href="<?= base_url(); ?>profile/post/<?= $this->session->userdata('id'); ?>">My Threads</a></li>
+             <li class="<?php if(isset($setThreadActive)) echo 'active'; ?>"><a href="<?= base_url(); ?>thread/index">Start a Thread</a></li>
            </ul>
         </div>
      </div>

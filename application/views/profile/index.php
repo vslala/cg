@@ -19,20 +19,25 @@ body{
 <div class="container">
     <div class="row">
         <div class="small-4 columns">
-            <img class="th" src="<?php if(isset($dp[0]['image_url'])) echo $dp[0]['image_url']; else echo 'http://s6.postimg.org/bdl0esqtd/Profile_Holder.png'; ?>" /><br />
+            <img class="th" src="<?php if(isset($user_dp[0]['image_url'])) echo $user_dp[0]['image_url']; else echo 'http://s6.postimg.org/bdl0esqtd/Profile_Holder.png'; ?>" /><br />
+            <?php if ($this->session->userdata('id') == $id): ?>
             <?= form_open_multipart('process/upload', ['id'=>'dp_upload_form']); ?>
             <div class="form-group">
                 <input type="file" class="form-control" id="userfile" name="userfile">
                 <input type="submit" class="hidden" value="upload" id="file_upload_button" />
             </div>
             <?= form_close(); ?>
+            <?php endif; ?>
+            <?php if($this->session->flashdata('upload_error')): ?>
+            <span class="alert alert-danger"><?= $this->session->flashdata('upload_error'); ?></span>
+            <?php endif; ?>
         </div>
         <div class="small-8 columns">
             <ul class="small-block-grid-2">
                 <li>
-                    <span class="glyphicon glyphicon-user"><?= $username ?></span><br />
-                    <span class="glyphicon glyphicon-envelope"><?= $email; ?></span><br />
-                    <span class="glyphicon glyphicon-">College: <?= $college; ?></span><br />
+                    <span class="glyphicon glyphicon-user"><?= $user[0]['username']; ?></span><br />
+                    <span class="glyphicon glyphicon-envelope"><?= $user[0]['email']; ?></span><br />
+                    <span class="glyphicon glyphicon-">College: <?= $user[0]['college']; ?></span><br />
                     <span class="glyphicon glyphicon-">Branch: <?= $branch[0]['branch_name']; ?></span><br />
                 </li>
                 <li>
@@ -83,7 +88,7 @@ body{
                     <tr>
                         <td>Reputation :</td>
                         <td>
-                            <?php echo pow(intval($userProfile[0]['total_answers']),intval($userProfile[0]['threads_started'])); ?>
+                            <?php echo (intval($userProfile[0]['total_answers']) * intval($userProfile[0]['threads_started'])); ?>
                             <span class="glyphicon glyphicon-star"></span>
                         </td>
                     </tr>
@@ -207,7 +212,6 @@ $(document).ready(function() {
 
 var $fileInput = $('#userfile');
 $fileInput.change(function(){
-    alert();
     $('#dp_upload_form').submit();
 });
 

@@ -96,7 +96,7 @@ a{
     <div class="thread_wrapper" id="thread_wrapper">
         <div class="row">
           <div class="small-2 columns" >
-            <span class="help-block left">Answers<span class="badge"><?= $t['total_answers']; ?></span></span>
+            <a href="<?= $t['thread_url']; ?>#disqus_thread"></a>
           </div>
           <div class="small-8 columns">
             <a style="display: block;" href=<?= $t['thread_url']; ?>>
@@ -125,9 +125,11 @@ a{
       <?php endif; ?>
       </div>
       <div class="small-2 columns">
+        <div class="category-wrapper">
         <ul class="nav small-text"> 
           <li class="category-heading">Categories</li>
           <?php foreach ($categories as $c): ?>
+            <?php if ($c['thread_count'] == 0) continue; ?>
             <li>
               <a class="link" href="<?= base_url(); ?>thread/category/<?= $c['id']; ?>">
                 <?= $c['category_name']; ?>
@@ -136,8 +138,21 @@ a{
             </li>
           <?php endforeach; ?>
         </ul>
-        
+        </div>
       </div>
   </div>
 
 </div>
+
+<script type="text/javascript">
+  /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+          var disqus_shortname = 'campusguru'; // required: replace example with your forum shortname
+
+          /* * * DON'T EDIT BELOW THIS LINE * * */
+          (function () {
+          var s = document.createElement('script'); s.async = true;
+          s.type = 'text/javascript';
+          s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+          (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+          }());
+</script>
