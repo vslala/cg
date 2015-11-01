@@ -196,8 +196,8 @@ class Process extends CI_Controller{
 			$data['thread_title'] = $title;
 			$data['thread_url'] = $thread_url;
 			$data['username'] = $user_name;
-			$this->email->message($this->load->view('template/email', $data, true));	
 			$this->email->set_mailtype("html");
+			$this->email->message($this->load->view('template/email', $data, true));	
 			$this->email->send();
 		}
 		
@@ -213,6 +213,7 @@ class Process extends CI_Controller{
 	public function getThreads(){
 		$threads = $this->user_model->getAllThreads();
 		$threads = json_encode($threads);
+		$this->output->set_header('Access-Control-Allow-Origin: *');
 		$this->output->set_output($threads);
 	}
 
